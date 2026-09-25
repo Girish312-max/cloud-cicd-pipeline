@@ -38,4 +38,5 @@ jobs:
         with:
           context: .
           push: true
+          platforms: linux/arm64
           tags: girish312/cloud-cicd-app:latest
