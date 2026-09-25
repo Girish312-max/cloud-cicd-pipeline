@@ -5,6 +5,10 @@ on:
     branches:
       - main
 
+permissions:
+  contents: read
+  id-token: write
+
 jobs:
   build-and-push:
     runs-on: ubuntu-latest
@@ -41,24 +45,33 @@ jobs:
           platforms: linux/arm64
           tags: girish312/cloud-cicd-app:latest
 
-      - name: Deploy to EC2
-        env:
-          EC2_HOST: ${{ secrets.EC2_HOST }}
-          EC2_USERNAME: ${{ secrets.EC2_USERNAME }}
-          EC2_SSH_KEY: ${{ secrets.EC2_SSH_KEY }}
-        run: |
-          mkdir -p ~/.ssh
-          printf '%s\n' "$EC2_SSH_KEY" > ~/.ssh/ec2_key
-          chmod 600 ~/.ssh/ec2_key
-          ssh-keyscan -H "$EC2_HOST" >> ~/.ssh/known_hosts
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v6
+        with:
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          aws-region: ${{ secrets.AWS_REGION }}
 
-          ssh -i ~/.ssh/ec2_key "$EC2_USERNAME@$EC2_HOST" << 'EOF'
-            docker pull girish312/cloud-cicd-app:latest
-            docker stop cloud-cicd-container || true
-            docker rm cloud-cicd-container || true
-            docker run -d \
-              --name cloud-cicd-container \
-              --restart unless-stopped \
-              -p 80:5000 \
-              girish312/cloud-cicd-app:latest
-          EOF
+      - name: Deploy to EC2 using SSM
+        env:
+          EC2_INSTANCE_ID: ${{ secrets.EC2_INSTANCE_ID }}
+        run: |
+          COMMAND_ID=$(aws ssm send-command \
+            --instance-ids "$EC2_INSTANCE_ID" \
+            --document-name "AWS-RunShellScript" \
+            --comment "Deploy latest Cloud CI/CD application" \
+            --parameters 'commands=[
+              "docker pull girish312/cloud-cicd-app:latest",
+              "docker stop cloud-cicd-container || true",
+              "docker rm cloud-cicd-container || true",
+              "docker run -d --name cloud-cicd-container --restart unless-stopped -p 80:5000 girish312/cloud-cicd-app:latest"
+            ]' \
+            --query 'Command.CommandId' \
+            --output text)
+
+          echo "SSM Command ID: $COMMAND_ID"
+
+          aws ssm wait command-executed \
+            --command-id "$COMMAND_ID" \
+            --instance-id "$EC2_INSTANCE_ID"
+
+          echo "Deployment completed successfully."
