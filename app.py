@@ -56,7 +56,7 @@ def home():
             </p>
 
             <p>
-                Version: <strong>1.0</strong>
+                Version: <strong>2.0</strong>
             </p>
 
         </div>
