@@ -5,12 +5,17 @@ on:
     branches:
       - main
 
+  pull_request:
+    branches:
+      - main
+
 permissions:
   contents: read
   id-token: write
 
 jobs:
-  build-and-push:
+  test:
+    name: Lint and Test
     runs-on: ubuntu-latest
 
     steps:
@@ -21,12 +26,58 @@ jobs:
         uses: actions/setup-python@v6
         with:
           python-version: "3.12"
+          cache: pip
 
       - name: Install dependencies
         run: pip install -r requirements.txt
 
-      - name: Run automated tests
-        run: pytest
+      - name: Run flake8
+        run: flake8 --max-line-length=120 --exclude=venv .
+
+      - name: Run pytest
+        run: pytest -v
+
+  build:
+    name: Build and Smoke Test
+    needs: test
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
+
+      - name: Build Docker image
+        run: |
+          docker build \
+            --build-arg GIT_SHA=${{ github.sha }} \
+            -t cloud-cicd-app:${{ github.sha }} .
+
+      - name: Start Docker container
+        run: |
+          docker run -d \
+            --name cloud-cicd-smoke-test \
+            -p 5000:5000 \
+            cloud-cicd-app:${{ github.sha }}
+
+      - name: Wait for application
+        run: sleep 5
+
+      - name: Health check
+        run: curl -f http://localhost:5000/health
+
+      - name: Stop smoke test container
+        if: always()
+        run: docker stop cloud-cicd-smoke-test || true
+
+  deploy:
+    name: Deploy to AWS EC2
+    needs: build
+    if: github.ref == 'refs/heads/main' && github.event_name == 'push'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source code
+        uses: actions/checkout@v6
 
       - name: Log in to Docker Hub
         uses: docker/login-action@v4
@@ -37,12 +88,14 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v4
 
-      - name: Build and push Docker image
+      - name: Build and push ARM64 Docker image
         uses: docker/build-push-action@v7
         with:
           context: .
           push: true
           platforms: linux/arm64
+          build-args: |
+            GIT_SHA=${{ github.sha }}
           tags: girish312/cloud-cicd-app:latest
 
       - name: Configure AWS credentials
