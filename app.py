@@ -65,6 +65,13 @@ def home():
     </html>
     """
 
+@app.route("/health")
+def health():
+    return {
+        "status": "healthy",
+        "application": "Cloud-Based CI/CD Pipeline",
+        "version": "2.0"
+    }, 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000)
