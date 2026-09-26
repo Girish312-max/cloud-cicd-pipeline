@@ -1,49 +1,39 @@
-# ☁️ Cloud-Based CI/CD Pipeline for Automated Application Deployment
+# 📸 Project Screenshots
 
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-blue)
-![Python](https://img.shields.io/badge/Python-3.12-blue)
-![Flask](https://img.shields.io/badge/Flask-Web%20Application-black)
-![Docker](https://img.shields.io/badge/Docker-Containerization-blue)
-![AWS](https://img.shields.io/badge/AWS-EC2-orange)
-![Architecture](https://img.shields.io/badge/Architecture-ARM64-green)
+## 🌐 Live Application
 
-## 📌 Project Overview
+The Flask application is successfully deployed and accessible through the AWS EC2 instance.
 
-This project demonstrates a **cloud-based Continuous Integration and Continuous Deployment (CI/CD) pipeline** for automatically testing, containerizing, and deploying a Flask web application.
-
-Whenever new code is pushed to the GitHub repository, the CI/CD pipeline automatically:
-
-1. Installs the required dependencies.
-2. Runs automated tests using Pytest.
-3. Builds an ARM64 Docker image.
-4. Pushes the Docker image to Docker Hub.
-5. Authenticates with AWS using OpenID Connect (OIDC).
-6. Uses AWS Systems Manager (SSM) to communicate with the EC2 instance.
-7. Pulls the latest Docker image on EC2.
-8. Stops the previous container.
-9. Starts the updated container.
-10. Makes the updated application available through the EC2 server.
-
-The project eliminates the need for manually building and deploying the application after every code change.
+![Live Application](screenshots/live-application.png)
 
 ---
 
-# 🏗️ System Architecture
+## ⚙️ GitHub Actions CI/CD Pipeline
 
-```mermaid
-flowchart LR
-    A[👨‍💻 Developer] -->|git push| B[GitHub Repository]
+GitHub Actions automatically runs the testing, Docker build, Docker Hub push, AWS authentication, and EC2 deployment stages.
 
-    B --> C[GitHub Actions]
+![GitHub Actions](screenshots/github-actions.png)
 
-    C --> D[Install Dependencies]
-    D --> E[Pytest Automated Tests]
-    E --> F[Build ARM64 Docker Image]
-    F --> G[Docker Hub]
+---
 
-    G --> H[AWS OIDC Authentication]
-    H --> I[AWS Systems Manager]
+## 🐳 Docker Hub
 
-    I --> J[Amazon EC2]
-    J --> K[Docker Container]
-    K --> L[Flask Web Application]
+The ARM64 Docker image is published to the project's Docker Hub repository.
+
+![Docker Hub](screenshots/docker-hub.png)
+
+---
+
+## ☁️ Amazon EC2
+
+The Flask application is deployed inside a Docker container running on an Amazon EC2 instance.
+
+![AWS EC2](screenshots/aws-ec2.png)
+
+---
+
+## 🔄 AWS Systems Manager
+
+AWS Systems Manager is used to execute the deployment commands on the EC2 instance without requiring GitHub Actions to directly connect through SSH.
+
+![AWS Systems Manager](screenshots/ssm-deployment.png)
