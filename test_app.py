@@ -31,8 +31,8 @@ def test_health():
 
     data = response.get_json()
 
-assert data["status"] == "FAILED"    
-assert "commit" in data
+    assert data["status"] == "ok"
+    assert "commit" in data
 
 
 def test_add_deployment():
